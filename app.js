@@ -35,10 +35,12 @@ app.use((req, res, next) => {
 })
 
 app.get('/', (req, res) => {
+  res.setHeader('Content-Type', 'text/html')
   res.status(200)
 
   const parser = new Transform()
-  parser._transform = (data, encoding, done) => {
+  // This could be done better
+  parser._transform = function(data, encoding, done) {
     let str = data.toString()
     str = str.replace('{JSON}', JSON.stringify(getAllStats()))
     this.push(str)
