@@ -1,0 +1,65 @@
+{
+  "name": "node_backup-stats",
+  "version": "1.0.0",
+  "description": "Tracks backups added and backup sizes",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "start-dev": "nodemon app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "xboxfly15",
+  "dependencies": {
+    "express": "^4.17.1",
+    "fast-folder-size": "^1.1.0",
+    "lowdb": "^1.0.0",
+    "stream": "^0.0.2"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      ".db/*",
+      ".cache/*",
+      "test.js",
+      "test.sql",
+      "test/*"
+    ]
+  },
+  "eslintConfig": {
+    "env": {
+      "es2020": true,
+      "node": true
+    },
+    "extends": [
+      "standard"
+    ],
+    "parserOptions": {
+      "ecmaVersion": 11
+    },
+    "rules": {
+      "strict": [
+        "error",
+        "global"
+      ],
+      "import/extensions": [
+        "error",
+        "ignorePackages"
+      ],
+      "node/no-callback-literal": "off",
+      "space-before-function-paren": [
+        "error",
+        {
+          "anonymous": "never",
+          "named": "never",
+          "asyncArrow": "always"
+        }
+      ],
+      "object-shorthand": [
+        "error",
+        "always"
+      ]
+    }
+  },
+  "devDependencies": {
+    "standardx": "^7.0.0"
+  }
+}

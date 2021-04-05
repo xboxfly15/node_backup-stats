@@ -1,0 +1,111 @@
+<head>
+    <script type="text/javascript">let content = {JSON}</script>
+    <script src="https://code.highcharts.com/highcharts.src.js"></script>
+    <script type="text/javascript">
+        const titles = Object.keys(content)
+
+        let parsedCotent = []
+
+        titles.forEach(title => {
+            const backups = content[title]
+
+            for (let datetime in backups) {
+                if (parsedCotent[title] === undefined) parsedCotent[title] = []
+                let date = datetime.split('\\')[0] // Fri_02-Apr-2021
+                let time = datetime.split('\\')[1] // 12AM-BST
+
+                if (date.length === 15)
+                    date = date.substring(4) // 02-Apr-2021
+                date = date.replace(/-/g, ' ') // 02 Apr 2021
+
+                time = time.replace(/-/g, ' ') // 12AM BST
+                time = time.substring(0, 2) + ':00:00 ' + time.substring(2) // 12:00:00 AM BST
+                time = time.replace('BST', 'GMT+1') // 12:00:00 AM GMT+1
+
+                parsedCotent[title].push([parseInt(new Date(date + ' ' + time).getTime()), backups[datetime]])
+            }
+            parsedCotent[title].sort()
+        })
+
+        content = parsedCotent
+
+        function formatBytes(bytes = 0, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            drawChart()
+        })
+
+        function drawChart() {
+            const chart = Highcharts.chart('backup_sizes_chart_div', {
+                chart: {
+                    type: 'line',
+                    zoomType: 'xy'
+                },
+                title: {
+                    text: 'Backup sizes'
+                },
+                xAxis: {
+                    title: {
+                        text: 'Date'
+                    },
+                    type: 'datetime'
+                },
+                yAxis: {
+                    title: {
+                        text: 'Size'
+                    },
+                    labels: {
+                        formatter: function() {
+                            return formatBytes(this.value)
+                        }
+                    }
+                },
+                labels: {
+                    formatter: function(tooltip) {
+                        return formatBytes(this.y)
+                    }
+                },
+                tooltip: {
+                    formatter: function() {
+                        let tooltip = this.series.chart.tooltip
+                        let item = this.point.getLabelConfig()
+                        let header = this.series.chart.tooltip.tooltipFooterHeaderFormatter(item)
+
+                        return header + '<span style="fill:'+this.point.color+'">&#8203;&#9679;</span> ' + this.series.name + ': <span style="font-weight:bold">' + formatBytes(this.y) + '</span>&#8203;'
+                    }
+                },
+                series: [{
+                    name: titles[0],
+                    data: content[titles[0]]
+                }, {
+                    name: titles[1],
+                    data: content[titles[1]]
+                }, {
+                    name: titles[2],
+                    data: content[titles[2]]
+                }, {
+                    name: titles[3],
+                    data: content[titles[3]]
+                }, {
+                    name: titles[4],
+                    data: content[titles[4]]
+                }]
+            })
+
+
+        }
+    </script>
+</head>
+<body style="margin:0">
+    <div id="backup_sizes_chart_div" style="border:1px solid #ccc;width:2120px;height:720"></div>
+</body>
