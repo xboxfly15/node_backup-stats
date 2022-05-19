@@ -1,17 +1,12 @@
 global.__basedir = __dirname
 const app = require('express')()
-app.disable('x-powered-by')
-app.disable('etag')
 const { Transform } = require('stream')
-
-const ipAddr = process.env.IP_ADDR || '127.0.0.1'
-const port = process.env.PORT || 9002
-
 const lowdb = require('lowdb')
 const FileSync = require('lowdb/adapters/FileSync')
 const fileadapter = new FileSync('.db/stats.json')
-const filedb = lowdb(fileadapter)
-filedb.defaults({}).write()
+const db = lowdb(fileadapter)
+db.data = db.data || { }
+db.write()
 
 const fs = require('fs')
 const path = require('path')
@@ -19,30 +14,30 @@ const { promisify } = require('util')
 const fastFolderSize = require('fast-folder-size')
 const fastFolderSizeAsync = promisify(fastFolderSize)
 
+const ipAddr = process.env.IP_ADDR || '0.0.0.0'
+const port = process.env.PORT || 9002
+
 const baseDir = path.join('A:', 'FTP', 'xboxfly15') // Path with backups
 
 app.use((req, res, next) => {
-  req.ipAddr = (req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress).split(':').pop()
+  req.ipAddr = req.connection.remoteAddress
   req.ua = req.headers['user-agent']
-  req.lang = req.headers['accept-language']
   req.url = req.protocol + '://' + req.hostname + req.originalUrl
   logRequest(req)
-  res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.setHeader('Content-Type', 'text/html')
   res.setHeader('Cache-Control', 'private, max-age=3600')
-  if (req.originalUrl.length > 1000) return res.status(414).send()
   if (req.method === 'OPTIONS') return res.status(200).send()
   return next()
 })
 
 app.get('/', (req, res) => {
-  res.setHeader('Content-Type', 'text/html')
   res.status(200)
 
   const parser = new Transform()
   // This could be done better
   parser._transform = function(data, encoding, done) {
     let str = data.toString()
-    str = str.replace('{JSON}', JSON.stringify(getAllStats()))
+    str = str.replace('{JSON}', JSON.stringify(db))
     this.push(str)
     done()
   }
@@ -58,11 +53,7 @@ app.get('/', (req, res) => {
 app.listen(port, ipAddr, () => console.info(`Server started on ${ipAddr}:${port}`))
 
 function logRequest(req) {
-  console.log(`Request {\n  IP: ${req.ipAddr}\n  User agent: ${req.ua}\n  Browser language: ${req.lang}\n  URL: ${req.url}\n}`)
-}
-
-function getAllStats() {
-  return filedb.value()
+  console.log(`Request {\n  IP: ${req.ipAddr}\n  User agent: ${req.ua}\n  URL: ${req.url}\n}`)
 }
 
 async function getFolderPaths(dir) {
@@ -79,36 +70,28 @@ async function getFolderPaths(dir) {
 async function updateStats() {
   console.log('Adding new backups')
 
-  const nameFolders = await getFolderPaths(baseDir)
+  const nameFolders = await getFolderPaths(baseDir).then(folders => folders.map(path => { console.log(folders[path]); return getFolderPaths(folders[path]) }))
+  const dateFolders = await nameFolders.map(async folder => await getFolderPaths(nameFolders[folder]))
+  const folders = await dateFolders.map(async folder => await getFolderPaths(nameFolders[folder]))
 
-  for (const nameFolder in nameFolders) {
-    console.log(nameFolders[nameFolder])
-    const dateFolders = await getFolderPaths(nameFolders[nameFolder])
+  for (const folder in folders) {
+    // Backup path style: UK1_MySQL_Backup\Fri_02-Apr-2021\12AM-BST
+    const size = await fastFolderSizeAsync(folders[folder])
+    const baseDirLen = baseDir.split(path.sep).length
+    const [name, date, time] = folders[folder].split(path.sep).splice(baseDirLen).join(path.sep).split(path.sep) // Get "UK1_MySQL_Backup" from backup path
+    const datetime = date + path.sep + time // Get date "Fri_02-Apr-2021" and time "12AM-BST" from backup path
 
-    for (const dateFolder in dateFolders) {
-      const timeFolders = await getFolderPaths(dateFolders[dateFolder])
+    console.log(folder, size)
+    if (!db[name]) {
+      db[name] = {}
+    }
 
-      for (const timeFolder in timeFolders) {
-        // Backup path style: UK1_MySQL_Backup\Fri_02-Apr-2021\12AM-BST
-        const size = await fastFolderSizeAsync(timeFolders[timeFolder])
-        const baseDirLen = baseDir.split(path.sep).length
-        const folder = timeFolders[timeFolder].split(path.sep).splice(baseDirLen).join(path.sep) // Remove baseDir from folder path
-        const name = folder.split(path.sep)[0] // Get "UK1_MySQL_Backup" from backup path
-        const datetime = folder.split(path.sep)[1] + path.sep + folder.split(path.sep)[2] // Get date "Fri_02-Apr-2021" and time "12AM-BST" from backup path
-
-        console.log(folder, size)
-        if (!filedb.has(name).value()) {
-          filedb.set(name, {}).value()
-        }
-
-        if (!filedb.get(name).has(datetime).value()) {
-          filedb.get(name).set(datetime, size).value()
-        }
-      }
+    if (!db[name][datetime]) {
+      db[name][datetime] = size
     }
   }
 
-  filedb.write()
+  db.write()
   console.log('Done')
 }
 
