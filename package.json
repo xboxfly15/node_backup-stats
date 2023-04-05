@@ -1,17 +1,26 @@
 {
   "name": "node_backup-stats",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Small NodeJS application that records the sizes of backups and displays them in a simple graph",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "start-dev": "nodemon app.js"
+    "dev": "nodemon app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xboxfly15/node_backup-stats.git"
   },
   "author": "xboxfly15",
+  "license": "GPL-2.0",
+  "bugs": {
+    "url": "https://github.com/xboxfly15/node_backup-stats/issues"
+  },
+  "homepage": "https://github.com/xboxfly15/node_backup-stats#readme",
   "dependencies": {
-    "express": "^4.18.1",
-    "fast-folder-size": "^1.6.2",
-    "lowdb": "^3.0.0"
+    "express": "^4.18.2",
+    "fast-folder-size": "^1.7.1",
+    "lowdb": "^5.1.0"
   },
   "nodemonConfig": {
     "ignore": [
