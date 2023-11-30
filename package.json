@@ -19,7 +19,7 @@
   "homepage": "https://github.com/xboxfly15/node_backup-stats#readme",
   "dependencies": {
     "express": "^4.18.2",
-    "fast-folder-size": "^1.7.1",
+    "fast-folder-size": "^2.0.0",
     "lowdb": "^5.1.0"
   },
   "nodemonConfig": {
