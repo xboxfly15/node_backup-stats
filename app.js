@@ -1,17 +1,12 @@
-global.__basedir = __dirname
-const app = require('express')()
-const { Transform } = require('stream')
-const lowdb = require('lowdb')
-const FileSync = require('lowdb/adapters/FileSync')
-const fileadapter = new FileSync('.db/stats.json')
-const db = lowdb(fileadapter)
-db.data = db.data || { }
-db.write()
-
-const fs = require('fs')
-const path = require('path')
-const { promisify } = require('util')
-const fastFolderSize = require('fast-folder-size')
+import { JSONFilePreset } from 'lowdb/node'
+import express from 'express'
+import { Transform } from 'node:stream'
+import fs from 'node:fs'
+import path from 'node:path'
+import { promisify } from 'node:util'
+import fastFolderSize from 'fast-folder-size'
+const app = express()
+const db = await JSONFilePreset('.db/stats.json', { })
 const fastFolderSizeAsync = promisify(fastFolderSize)
 
 const ipAddr = process.env.IP_ADDR || '0.0.0.0'
@@ -42,7 +37,7 @@ app.get('/', (req, res) => {
     done()
   }
 
-  const rs = fs.createReadStream(global.__basedir + '/index.html')
+  const rs = fs.createReadStream(import.meta.dirname + '/index.html')
   rs.on('error', err => {
     res.send()
     console.error(err)
